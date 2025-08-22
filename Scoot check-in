@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoutCheck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.react@1.0.1/lib/index.min.js"></script>
+    <style>
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 10px;
+            background-color: #ef4444;
+        }
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        .slide-in {
+            animation: slideIn 0.5s forwards;
+        }
+        .slide-out {
+            animation: slideOut 0.5s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div id="app" class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar bg-blue-900 text-white flex flex-col w-64">
+            <div class="p-4 flex items-center justify-between border-b border-blue-800">
+                <div class="flex items-center">
+                    <i class="fas fa-scroll text-2xl mr-3"></i>
+                    <span class="text-xl font-bold">ScoutCheck</span>
+                </div>
+                <button id="toggle-sidebar" class="text-white">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="flex-1 p-2 space-y-2">
+                <button data-view="dashboard" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button data-view="check-in" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-sign-in-alt mr-3"></i>
+                    <span>Check-In/Out</span>
+                </button>
+                <button data-view="members" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-users mr-3"></i>
+                    <span>Members</span>
+                </button>
+                <button data-view="events" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100 relative">
+                    <i class="fas fa-calendar-alt mr-3"></i>
+                    <span>Events</span>
+                    <span class="notification-badge rounded-full w-5 h-5 flex items-center justify-center text-white text-xs">3</span>
+                </button>
+                <button data-view="documents" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-file-alt mr-3"></i>
+                    <span>Documents</span>
+                </button>
+                <button data-view="reports" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    <span>Reports</span>
+                </button>
+                <button data-view="settings" class="flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-cog mr-3"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+            <div class="p-4 border-t border-blue-800">
+                <div class="text-xs text-blue-300 mb-2">TROOP INFO</div>
+                <div class="text-sm">Troop #1234</div>
+                <div class="text-xs text-blue-300">Trailmen & AHG</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <header class="bg-white shadow-sm p-4 flex justify-between items-center">
+                <h1 id="view-title" class="text-xl font-semibold">DASHBOARD</h1>
+                <div class="flex items-center space-x-4">
+                    <button class="relative text-gray-600">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="notification-badge rounded-full w-5 h-5 flex items-center justify-center text-white text-xs">2</span>
+                    </button>
+                    <button class="text-gray-600">
+                        <i class="fas fa-question-circle text-xl"></i>
+                    </button>
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                    </div>
+                </div>
+            </header>
+
+            <main class="p-4">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view-content">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">Total Members</div>
+                                    <div class="text-2xl font-bold">3</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">Events This Week</div>
+                                    <div class="text-2xl font-bold">3</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">Pending Forms</div>
+                                    <div class="text-2xl font-bold">5</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">Active Alerts</div>
+                                    <div class="text-2xl font-bold">1</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white rounded-lg shadow p-4 lg:col-span-2">
+                            <h2 class="text-lg font-semibold mb-4">Recent Check-Ins</h2>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Scout</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time In</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time Out</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Guardian</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td class="px-4 py-2">John Smith</td>
+                                            <td class="px-4 py-2">10:30 AM</td>
+                                            <td class="px-4 py-2">-</td>
+                                            <td class="px-4 py-2">Mary Smith</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-4 py-2">Sarah Johnson</td>
+                                            <td class="px-4 py-2">9:45 AM</td>
+                                            <td class="px-4 py-2">3:15 PM</td>
+                                            <td class="px-4 py-2">Mary Smith</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h2 class="text-lg font-semibold mb-4">Upcoming Events</h2>
+                            <div class="space-y-4">
+                                <div class="border-l-4 border-blue-500 pl-4 py-1">
+                                    <div class="text-sm font-medium">Camping Trip</div>
+                                    <div class="text-xs text-gray-500">Sat, Jun 10 - Sun, Jun 11</div>
+                                    <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">12 attending</span>
+                                </div>
+                                <div class="border-l-4 border-green-500 pl-4 py-1">
+                                    <div class="text-sm font-medium">Hiking Day</div>
+                                    <div class="text-xs text-gray-500">Sun, Jun 18</div>
+                                    <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">8 attending</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-4">Attendance Overview</h2>
+                        <canvas id="attendanceChart" height="300"></canvas>
+                    </div>
+                </div>
+
+                <!-- Check-In View -->
+                <div id="check-in-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4 mb-6">
+                        <h2 class="text-lg font-semibold mb-4">Check-In/Out System</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="font-medium text-gray-700 mb-3">Check-In</h3>
+                                <select id="checkin-child-select" class="w-full border rounded-lg px-4 py-2 mb-4">
+                                    <option value="">Select Scout</option>
+                                    <option value="c1">John Smith</option>
+                                    <option value="c2">Sarah Johnson</option>
+                                    <option value="c3">Michael Brown</option>
+                                </select>
+                                <button id="checkin-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                                    Check In Scout
+                                </button>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-700 mb-3">Check-Out</h3>
+                                <select id="checkout-child-select" class="w-full border rounded-lg px-4 py-2 mb-4">
+                                    <option value="">Select Scout</option>
+                                    <option value="c2">Sarah Johnson</option>
+                                </select>
+                                <div class="flex items-center space-x-2 mb-4">
+                                    <input type="text" id="verification-code" placeholder="Enter verification code" class="flex-1 border rounded-lg px-4 py-2">
+                                    <button id="scan-qr-btn" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300">
+                                        <i class="fas fa-qrcode"></i>
+                                    </button>
+                                </div>
+                                <div id="verification-message" class="text-red-500 mb-4 hidden"></div>
+                                <button id="checkout-btn" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                                    Check Out Scout
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div class="text-center">
+                                <h3 class="font-medium text-gray-700 mb-3">Parent/Guardian QR Code</h3>
+                                <div id="qr-code-container" class="mb-3"></div>
+                                <p class="text-sm text-gray-600 mb-3">Show this code to check your scout in/out</p>
+                                <button class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-download mr-2"></i>Download QR Code
+                                </button>
+                            </div>
+                            <div class="text-center">
+                                <h3 class="font-medium text-gray-700 mb-3">Emergency Check-Out</h3>
+                                <div class="qr-code bg-red-100 mb-3 flex items-center justify-center h-[150px]">
+                                    <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">Use in case of emergency to check out all scouts</p>
+                                <button class="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700">
+                                    <i class="fas fa-bell mr-2"></i>Send Emergency Alert
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Members View -->
+                <div id="members-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Troop Members</h2>
+                            <div class="flex space-x-2">
+                                <button class="bg-blue-600 text-white py-1 px-3 rounded-lg text-sm hover:bg-blue-700">
+                                    <i class="fas fa-plus mr-1"></i> Add Member
+                                </button>
+                                <button class="bg-white border border-gray-300 text-gray-700 py-1 px-3 rounded-lg text-sm hover:bg-gray-50">
+                                    <i class="fas fa-filter mr-1"></i> Filter
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guardians</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                                                    <i class="fas fa-user text-blue-600 text-xs"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="text-sm font-medium">John Smith</div>
+                                                    <div class="text-xs text-gray-500">ID: c1</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">Trailmen</td>
+                                        <td class="px-4 py-3 text-sm">Fox</td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm">Mary Smith</div>
+                                            <div class="text-xs text-gray-500">1 authorized</div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">OUT</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-3">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                                                    <i class="fas fa-user text-blue-600 text-xs"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="text-sm font-medium">Sarah Johnson</div>
+                                                    <div class="text-xs text-gray-500">ID: c2</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">Trailmen</td>
+                                        <td class="px-4 py-3 text-sm">Fox</td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm">Mary Smith</div>
+                                            <div class="text-xs text-gray-500">1 authorized</div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">IN</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-3">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                                                    <i class="fas fa-user text-blue-600 text-xs"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="text-sm font-medium">Michael Brown</div>
+                                                    <div class="text-xs text-gray-500">ID: c3</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">Trailmen</td>
+                                        <td class="px-4 py-3 text-sm">Fox</td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm">Troop Leader</div>
+                                            <div class="text-xs text-gray-500">1 authorized</div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">OUT</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-3">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between mt-4">
+                            <div class="text-sm text-gray-500">
+                                Showing 1 to 3 of 3 members
+                            </div>
+                            <div class="flex space-x-1">
+                                <button class="px-3 py-1 border rounded text-sm bg-white text-gray-700 hover:bg-gray-50">Previous</button>
+                                <button class="px-3 py-1 border rounded text-sm bg-blue-600 text-white">1</button>
+                                <button class="px-3 py-1 border rounded text-sm bg-white text-gray-700 hover:bg-gray-50">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Events View -->
+                <div id="events-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Troop Events</h2>
+                            <div class="flex space-x-2">
+                                <button class="bg-blue-600 text-white py-1 px-3 rounded-lg text-sm hover:bg-blue-700">
+                                    <i class="fas fa-plus mr-1"></i> Add Event
+                                </button>
+                                <button class="bg-white border border-gray-300 text-gray-700 py-1 px-3 rounded-lg text-sm hover:bg-gray-50">
+                                    <i class="fas fa-calendar-alt mr-1"></i> Calendar View
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <h3 class="font-medium text-lg">CHECK-IN for John Smith</h3>
+                                        <div class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-calendar-day mr-2"></i>Today
+                                        </div>
+                                        <div class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-map-marker-alt mr-2"></i>Troop Meeting
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Upcoming</span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t">
+                                    <div class="flex items-center text-sm">
+                                        <div class="mr-4">
+                                            <span class="font-medium">12</span> <span class="text-gray-600">attending</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <h3 class="font-medium text-lg">Camping Trip</h3>
+                                        <div class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-calendar-day mr-2"></i>Sat, Jun 10 - Sun, Jun 11
+                                        </div>
+                                        <div class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-map-marker-alt mr-2"></i>State Park
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Confirmed</span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t">
+                                    <div class="flex items-center text-sm">
+                                        <div class="mr-4">
+                                            <span class="font-medium">8</span> <span class="text-gray-600">attending</span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">2</span> <span class="text-gray-600">spots left</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents View -->
+                <div id="documents-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Troop Documents</h2>
+                            <div class="flex space-x-2">
+                                <input type="file" id="document-upload" class="text-sm">
+                                <input type="text" id="document-name" placeholder="Document name" class="border rounded-lg px-4 py-2 text-sm">
+                                <button id="upload-btn" class="bg-blue-600 text-white py-1 px-3 rounded-lg text-sm hover:bg-blue-700">
+                                    <i class="fas fa-upload mr-1"></i> Upload
+                                </button>
+                                <button class="bg-white border border-gray-300 text-gray-700 py-1 px-3 rounded-lg text-sm hover:bg-gray-50">
+                                    <i class="fas fa-folder mr-1"></i> New Folder
+                                </button>
+                            </div>
+                        </div>
+                        <div class="relative mb-4">
+                            <input type="text" class="w-full border rounded-lg px-4 py-2" placeholder="Search documents...">
+                            <button class="absolute right-3 top-2 text-gray-500">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="border rounded-lg p-4 hover:shadow-md">
+                                <div class="flex items-center mb-3">
+                                    <div class="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium truncate">Permission Slip.pdf</p>
+                                        <p class="text-xs text-gray-500">permission_slip.pdf</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>Uploaded: Today</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-800">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border rounded-lg p-4 hover:shadow-md">
+                                <div class="flex items-center mb-3">
+                                    <div class="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium truncate">Medical Form.pdf</p>
+                                        <p class="text-xs text-gray-500">medical_form.pdf</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>Uploaded: 1 week ago</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-800">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports View -->
+                <div id="reports-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Reports</h2>
+                            <button id="export-all-btn" class="bg-blue-600 text-white py-1 px-3 rounded-lg text-sm hover:bg-blue-700">
+                                <i class="fas fa-download mr-1"></i> Export All
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-white border rounded-lg p-4">
+                                <h3 class="font-medium text-gray-700 mb-3">Attendance Report</h3>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                                    <div class="flex space-x-2">
+                                        <input type="date" class="flex-1 border rounded-lg px-4 py-2">
+                                        <span class="flex items-center">to</span>
+                                        <input type="date" class="flex-1 border rounded-lg px-4 py-2">
+                                    </div>
+                                </div>
+                                <button id="attendance-report-btn" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                                    Generate Report
+                                </button>
+                            </div>
+                            <div class="bg-white border rounded-lg p-4">
+                                <h3 class="font-medium text-gray-700 mb-3">Event Participation</h3>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Event</label>
+                                    <select class="w-full border rounded-lg px-4 py-2">
+                                        <option>All Events</option>
+                                        <option>Camping Trip</option>
+                                        <option>Hiking Day</option>
+                                    </select>
+                                </div>
+                                <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                                    Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-6">Troop Settings</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-2">
+                                <h3 class="font-medium text-gray-700 mb-4">General Information</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Troop Name</label>
+                                        <input type="text" value="Troop #1234" class="w-full border rounded-lg px-4 py-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Programs</label>
+                                        <div class="space-y-2">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" class="rounded text-blue-600" checked>
+                                                <span class="ml-2 text-sm">Trailmen</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" class="rounded text-blue-600" checked>
+                                                <span class="ml-2 text-sm">American Heritage Girls</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-700 mb-4">Troop Logo</h3>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                    <div class="mx-auto w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-3">
+                                        <i class="fas fa-camera text-gray-400 text-xl"></i>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Upload your troop logo</p>
+                                    <button class="text-sm text-blue-600 font-medium">Select Image</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button class="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login View -->
+                <div id="login-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4 max-w-md mx-auto mt-20">
+                        <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+                        <input type="tel" id="login-phone" placeholder="Phone Number" class="w-full border rounded-lg px-4 py-2 mb-4">
+                        <div id="login-error" class="text-red-500 mb-4 hidden"></div>
+                        <button id="send-otp-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                            Send OTP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- OTP View -->
+                <div id="otp-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4 max-w-md mx-auto mt-20">
+                        <h2 class="text-2xl font-bold mb-6 text-center">Enter OTP</h2>
+                        <p id="otp-phone" class="text-center mb-4">Sent to 1234567890</p>
+                        <input type="text" id="otp-code" placeholder="6-digit OTP" class="w-full border rounded-lg px-4 py-2 mb-4">
+                        <div id="otp-error" class="text-red-500 mb-4 hidden"></div>
+                        <button id="verify-otp-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                            Verify
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Child List View -->
+                <div id="child-list-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-4">My Children</h2>
+                        <div id="children-list">
+                            <!-- Children will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modal -->
+        <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-sm w-full">
+                <div class="p-4 text-center">
+                    <h2 class="text-2xl font-bold mb-4 text-blue-800">Your Pick-Up Code</h2>
+                    <p class="text-gray-600 mb-2">Scan or present this QR code for pick-up:</p>
+                    <div id="modal-qr-code" class="mb-4"></div>
+                    <p id="modal-code" class="text-5xl font-bold tracking-widest bg-gray-100 text-blue-700 py-4 px-6 rounded-lg my-4 inline-block">
+                        123456
+                    </p>
+                    <button id="close-modal-btn" class="mt-6 w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700">
+                        Got It!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Toast -->
+        <div id="success-toast" class="fixed top-5 right-5 bg-green-500 text-white py-3 px-5 rounded-lg shadow-xl flex items-center hidden">
+            <i class="fas fa-check w-6 h-6 mr-2"></i>
+            <span id="success-message" class="font-medium"></span>
+        </div>
+    </div>
+
+    <script>
+        // App state
+        const state = {
+            currentUser: null,
+            children: [
+                { id: 'c1', name: 'John Smith', status: 'out' },
+                { id: 'c2', name: 'Sarah Johnson', status: 'in', pickupCode: '123456' },
+                { id: 'c3', name: 'Michael Brown', status: 'out' }
+            ],
+            documents: [
+                { id: 'd1', name: 'Permission Slip.pdf', url: 'mock_url', uploadedAt: new Date() }
+            ],
+            eventLogs: [
+                { id: 'e1', type: 'check-in', childId: 'c1', childName: 'John Smith', byUserId: 'g1', byUserName: 'Mary Smith', byRole: 'guardian', timestamp: new Date() }
+            ],
+            allGuardians: [
+                { id: 'g1', phone: '1234567890', childIds: ['c1', 'c2'], role: 'guardian', name: 'Mary Smith' },
+                { id: 'g2', phone: '0987654321', childIds: ['c3'], role: 'admin', name: 'Troop Leader' }
+            ],
+            staffVerificationState: { status: 'idle' },
+            phoneToVerify: null,
+            sidebarOpen: true
+        };
+
+        // DOM elements
+        const elements = {
+            sidebar: document.getElementById('sidebar'),
+            toggleSidebar: document.getElementById('toggle-sidebar'),
+            viewTitle: document.getElementById('view-title'),
+            viewContents: document.querySelectorAll('.view-content'),
+            viewButtons: document.querySelectorAll('[data-view]'),
+            modal: document.getElementById('modal'),
+            closeModalBtn: document.getElementById('close-modal-btn'),
+            modalQrCode: document.getElementById('modal-qr-code'),
+            modalCode: document.getElementById('modal-code'),
+            successToast: document.getElementById('success-toast'),
+            successMessage: document.getElementById('success-message'),
+            loginView: document.getElementById('login-view'),
+            otpView: document.getElementById('otp-view'),
+            childListView: document.getElementById('child-list-view'),
+            loginPhone: document.getElementById('login-phone'),
+            loginError: document.getElementById('login-error'),
+            sendOtpBtn: document.getElementById('send-otp-btn'),
+            otpPhone: document.getElementById('otp-phone'),
+            otpCode: document.getElementById('otp-code'),
+            otpError: document.getElementById('otp-error'),
+            verifyOtpBtn: document.getElementById('verify-otp-btn'),
+            childrenList: document.getElementById('children-list'),
+            checkinChildSelect: document.getElementById('checkin-child-select'),
+            checkoutChildSelect: document.getElementById('checkout-child-select'),
+            checkinBtn: document.getElementById('checkin-btn'),
+            checkoutBtn: document.getElementById('checkout-btn'),
+            verificationCode: document.getElementById('verification-code'),
+            verificationMessage: document.getElementById('verification-message'),
+            scanQrBtn: document.getElementById('scan-qr-btn'),
+            qrCodeContainer: document.getElementById('qr-code-container'),
+            documentUpload: document.getElementById('document-upload'),
+            documentName: document.getElementById('document-name'),
+            uploadBtn: document.getElementById('upload-btn'),
+            exportAllBtn: document.getElementById('export-all-btn'),
+            attendanceReportBtn: document.getElementById('attendance-report-btn')
+        };
+
+        // Initialize the app
+        function init() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initialize charts
+            initCharts();
+            
+            // Generate QR code
+            generateQRCode();
+            
+            // Show login view by default
+            showView('login');
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Toggle sidebar
+            elements.toggleSidebar.addEventListener('click', () => {
+                state.sidebarOpen = !state.sidebarOpen;
+                elements.sidebar.classList.toggle('w-64');
+                elements.sidebar.classList.toggle('w-16');
+                
+                // Hide/show text in sidebar items
+                const sidebarTexts = elements.sidebar.querySelectorAll('nav button span');
+                sidebarTexts.forEach(text => {
+                    text.classList.toggle('hidden');
+                });
+                
+                // Hide/show troop info
+                const troopInfo = elements.sidebar.querySelector('div:last-child');
+                troopInfo.classList.toggle('hidden');
+            });
+
+            // View navigation
+            elements.viewButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const view = button.getAttribute('data-view');
+                    showView(view);
+                });
+            });
+
+            // Close modal
+            elements.closeModalBtn.addEventListener('click', () => {
+                elements.modal.classList.add('hidden');
+            });
+
+            // Login
+            elements.sendOtpBtn.addEventListener('click', handleLoginRequest);
+            elements.verifyOtpBtn.addEventListener('click', handleVerifyOtp);
+
+            // Check-in/out
+            elements.checkinBtn.addEventListener('click', handleCheckIn);
+            elements.checkoutBtn.addEventListener('click', handleStaffCheckout);
+            elements.scanQrBtn.addEventListener('click', () => {
+                alert('QR scanner would open here in a real app');
+            });
+
+            // Documents
+            elements.uploadBtn.addEventListener('click', handleUploadDocument);
+
+            // Reports
+            elements.exportAllBtn.addEventListener('click', exportEventLogs);
+            elements.attendanceReportBtn.addEventListener('click', exportChildrenData);
+        }
+
+        // Initialize charts
+        function initCharts() {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Check-Ins',
+                        data: [12, 15, 10, 18],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+
+        // Generate QR code
+        function generateQRCode() {
+            const code = generateSecure6DigitCode();
+            QRCode.toCanvas(document.getElementById('qr-code-container'), `scoutcheck://${code}`, {
+                width: 150,
+                margin: 2
+            }, (error) => {
+                if (error) console.error(error);
+            });
+        }
+
+        // Generate a secure 6-digit code
+        function generateSecure6DigitCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Show a view and hide others
+        function showView(view) {
+            // Update view title
+            elements.viewTitle.textContent = view.toUpperCase();
+            
+            // Hide all views
+            elements.viewContents.forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            // Show the selected view
+            document.getElementById(`${view}-view`).classList.remove('hidden');
+            
+            // Special cases
+            if (view === 'child-list') {
+                renderChildList();
+            }
+        }
+
+        // Display success message
+        function displaySuccessMessage(message) {
+            elements.successMessage.textContent = message;
+            elements.successToast.classList.remove('hidden');
+            elements.successToast.classList.add('fade-in');
+            
+            setTimeout(() => {
+                elements.successToast.classList.add('hidden');
+                elements.successToast.classList.remove('fade-in');
+            }, 3000);
+        }
+
+        // Handle login request
+        function handleLoginRequest() {
+            const phone = elements.loginPhone.value;
+            
+            if (!phone) {
+                elements.loginError.textContent = 'Please enter a phone number';
+                elements.loginError.classList.remove('hidden');
+                return;
+            }
+            
+            const user = state.allGuardians.find(g => g.phone === phone);
+            if (user) {
+                state.phoneToVerify = phone;
+                elements.otpPhone.textContent = `Sent to ${phone}`;
+                showView('login-otp');
+            } else {
+                elements.loginError.textContent = 'Phone number not found';
+                elements.loginError.classList.remove('hidden');
+            }
+        }
+
+        // Handle OTP verification
+        function handleVerifyOtp() {
+            const otp = elements.otpCode.value;
+            
+            if (otp.length !== 6) {
+                elements.otpError.textContent = 'Invalid OTP. Please enter a 6-digit code.';
+                elements.otpError.classList.remove('hidden');
+                return;
+            }
+            
+            if (state.phoneToVerify) {
+                const user = state.allGuardians.find(g => g.phone === state.phoneToVerify);
+                if (user) {
+                    state.currentUser = user;
+                    state.phoneToVerify = null;
+                    
+                    if (user.role === 'admin' || user.role === 'staff') {
+                        showView('dashboard');
+                    } else {
+                        showView('child-list');
+                    }
+                    
+                    displaySuccessMessage(`Welcome back, ${user.name}!`);
+                } else {
+                    elements.otpError.textContent = 'An unexpected error occurred';
+                    elements.otpError.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Render child list
+        function renderChildList() {
+            if (!state.currentUser) return;
+            
+            const userChildren = state.children.filter(child => 
+                state.currentUser.childIds.includes(child.id)
+            );
+            
+            elements.childrenList.innerHTML = '';
+            
+            userChildren.forEach(child => {
+                const childElement = document.createElement('div');
+                childElement.className = 'flex items-center justify-between mb-4 border-b pb-4';
+                childElement.innerHTML = `
+                    <div>
+                        <p class="font-medium">${child.name}</p>
+                        <p class="text-sm text-gray-500">Status: ${child.status.toUpperCase()}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <button data-child-id="${child.id}" class="checkin-btn bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700">
+                            Check In
+                        </button>
+                        <button data-child-id="${child.id}" class="show-code-btn bg-green-600 text-white py-1 px-3 rounded hover:bg-green-700" ${child.status !== 'in' ? 'disabled' : ''}>
+                            Show Code
+                        </button>
+                    </div>
+                `;
+                
+                elements.childrenList.appendChild(childElement);
+            });
+            
+            // Add event listeners to dynamically created buttons
+            document.querySelectorAll('.checkin-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const childId = e.target.getAttribute('data-child-id');
+                    handleCheckIn(childId);
+                });
+            });
+            
+            document.querySelectorAll('.show-code-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const childId = e.target.getAttribute('data-child-id');
+                    handleShowCode(childId);
+                });
+            });
+        }
+
+        // Handle check-in
+        function handleCheckIn(childId) {
+            const childToCheckIn = state.children.find(c => c.id === childId);
+            if (!childToCheckIn) return;
+            
+            const newCode = generateSecure6DigitCode();
+            
+            // Update state
+            state.children = state.children.map(c => 
+                c.id === childId ? { ...c, status: 'in', pickupCode: newCode, lastActionTimestamp: new Date() } : c
+            );
+            
+            // Log event
+            logEvent('check-in', { ...childToCheckIn, status: 'in' });
+            
+            // Show modal with code
+            showModal(newCode);
+            
+            // Show success message
+            displaySuccessMessage(`${childToCheckIn.name} checked in successfully!`);
+            
+            // Update UI
+            if (state.currentUser.role === 'guardian') {
+                renderChildList();
+            }
+        }
+
+        // Handle show code
+        function handleShowCode(childId) {
+            const child = state.children.find(c => c.id === childId);
+            if (child?.status === 'in' && child.pickupCode) {
+                showModal(child.pickupCode);
+            }
+        }
+
+        // Show modal with QR code and pickup code
+        function showModal(code) {
+            elements.modalCode.textContent = code;
+            
+            // Clear previous QR code
+            elements.modalQrCode.innerHTML = '';
+            
+            // Generate new QR code
+            QRCode.toCanvas(elements.modalQrCode, `scoutcheck://${code}`, {
+                width: 150,
+                margin: 2
+            }, (error) => {
+                if (error) console.error(error);
+            });
+            
+            elements.modal.classList.remove('hidden');
+        }
+
+        // Handle staff checkout
+        function handleStaffCheckout() {
+            const childId = elements.checkoutChildSelect.value;
+            const verificationCode = elements.verificationCode.value;
+            
+            if (!childId) {
+                elements.verificationMessage.textContent = 'Please select a scout';
+                elements.verificationMessage.classList.remove('hidden');
+                return;
+            }
+            
+            const childToCheckout = state.children.find(c => c.id === childId);
+            if (!childToCheckout) return;
+            
+            // Verify code if provided
+            if (verificationCode && childToCheckout.pickupCode !== verificationCode) {
+                elements.verificationMessage.textContent = 'Invalid verification code';
+                elements.verificationMessage.classList.remove('hidden');
+                return;
+            }
+            
+            // Update state
+            state.children = state.children.map(c => 
+                c.id === childId ? { ...c, status: 'out', pickupCode: null, lastActionTimestamp: new Date() } : c
+            );
+            
+            // Log event
+            logEvent('check-out', { ...childToCheckout, status: 'out' });
+            
+            // Show success message
+            displaySuccessMessage(`${childToCheckout.name} has been successfully checked out.`);
+            
+            // Clear verification fields
+            elements.verificationCode.value = '';
+            elements.verificationMessage.classList.add('hidden');
+            
+            // Update UI
+            renderCheckoutDropdown();
+        }
+
+        // Log event
+        function logEvent(type, child) {
+            if (!state.currentUser) return;
+            
+            const newLog = {
+                id: `e${Date.now()}`,
+                type,
+                childId: child.id,
+                childName: child.name,
+                byUserId: state.currentUser.id,
+                byUserName: state.currentUser.name,
+                byRole: state.currentUser.role,
+                timestamp: new Date()
+            };
+            
+            state.eventLogs = [newLog, ...state.eventLogs];
+        }
+
+        // Handle document upload
+        function handleUploadDocument() {
+            const file = elements.documentUpload.files[0];
+            const name = elements.documentName.value || file.name;
+            
+            if (!file) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            const newDoc = {
+                id: `d${Date.now()}`,
+                name: name,
+                url: URL.createObjectURL(file),
+                storagePath: `documents/${file.name}`,
+                uploadedAt: new Date()
+            };
+            
+            state.documents = [newDoc, ...state.documents];
+            
+            // Show success message
+            displaySuccessMessage('Document uploaded successfully!');
+            
+            // Clear form
+            elements.documentUpload.value = '';
+            elements.documentName.value = '';
+            
+            // Update UI (would need to implement document list rendering)
+        }
+
+        // Export children data
+        function exportChildrenData() {
+            const csv = convertToCSV(state.children);
+            downloadCSV(csv, 'children_data.csv');
+            displaySuccessMessage('Children data exported successfully!');
+        }
+
+        // Export event logs
+        function exportEventLogs() {
+            const csv = convertToCSV(state.eventLogs);
+            downloadCSV(csv, 'event_logs.csv');
+            displaySuccessMessage('Event logs exported successfully!');
+        }
+
+        // Convert array to CSV
+        function convertToCSV(data) {
+            if (data.length === 0) return '';
+            
+            const header = Object.keys(data[0]);
+            const rows = data.map(row => 
+                header.map(fieldName => JSON.stringify(row[fieldName])).join(',')
+            );
+            
+            return [header.join(','), ...rows].join('\n');
+        }
+
+        // Download CSV
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Render checkout dropdown with only checked-in children
+        function renderCheckoutDropdown() {
+            const checkedInChildren = state.children.filter(c => c.status === 'in');
+            
+            elements.checkoutChildSelect.innerHTML = '<option value="">Select Scout</option>';
+            
+            checkedInChildren.forEach(child => {
+                const option = document.createElement('option');
+                option.value = child.id;
+                option.textContent = child.name;
+                elements.checkoutChildSelect.appendChild(option);
+            });
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
