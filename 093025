@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoutCheck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <style>
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 10px;
+            background-color: #ef4444;
+        }
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div id="app" class="flex h-screen overflow-hidden">
+        <aside id="sidebar" class="sidebar bg-blue-900 text-white flex flex-col w-64">
+            <div class="p-4 flex items-center justify-between border-b border-blue-800">
+                <div class="flex items-center">
+                    <i class="fas fa-scroll text-2xl mr-3"></i>
+                    <span class="text-xl font-bold">ScoutCheck</span>
+                </div>
+                <button id="toggle-sidebar" class="text-white lg:hidden">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="flex-1 p-2 space-y-2">
+                <button data-view="dashboard" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100 bg-blue-700">
+                    <i class="fas fa-tachometer-alt mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                <button data-view="check-in" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-sign-in-alt mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Check-In/Out</span>
+                </button>
+                <button data-view="members" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-users mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Members</span>
+                </button>
+                <button data-view="events" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100 relative">
+                    <i class="fas fa-calendar-alt mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Events</span>
+                    <span id="events-badge" class="notification-badge rounded-full w-5 h-5 flex items-center justify-center text-white text-xs"></span>
+                </button>
+                <button data-view="documents" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-file-alt mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Documents</span>
+                </button>
+                <button data-view="reports" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-chart-bar mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Reports</span>
+                </button>
+                <button data-view="settings" class="nav-button flex items-center p-2 rounded hover:bg-blue-800 w-full text-left text-blue-100">
+                    <i class="fas fa-cog mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Settings</span>
+                </button>
+            </nav>
+             <div class="p-4 border-t border-blue-800">
+                <button id="logout-btn" class="flex items-center p-2 rounded hover:bg-red-800 w-full text-left text-blue-100">
+                    <i class="fas fa-sign-out-alt mr-3 w-6 text-center"></i>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm p-4 flex justify-between items-center">
+                 <div class="flex items-center">
+                    <button id="main-menu-toggle" class="text-gray-600 mr-4 lg:hidden">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h1 id="view-title" class="text-xl font-semibold">DASHBOARD</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <div id="user-name" class="font-semibold text-sm"></div>
+                        <div id="user-role" class="text-xs text-gray-500"></div>
+                    </div>
+                    <div id="user-avatar" class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-auto p-4">
+                <div id="dashboard-view" class="view-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white rounded-lg shadow p-4 flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4"><i class="fas fa-users"></i></div>
+                            <div>
+                                <div class="text-gray-500">Total Members</div>
+                                <div id="total-members-stat" class="text-2xl font-bold">0</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4"><i class="fas fa-user-check"></i></div>
+                            <div>
+                                <div class="text-gray-500">Members Checked In</div>
+                                <div id="checked-in-stat" class="text-2xl font-bold">0</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex items-center">
+                            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4"><i class="fas fa-calendar-alt"></i></div>
+                            <div>
+                                <div class="text-gray-500">Upcoming Events</div>
+                                <div id="upcoming-events-stat" class="text-2xl font-bold">0</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex items-center">
+                             <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4"><i class="fas fa-file-alt"></i></div>
+                            <div>
+                                <div class="text-gray-500">Total Documents</div>
+                                <div id="total-docs-stat" class="text-2xl font-bold">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white rounded-lg shadow p-4 lg:col-span-2">
+                            <h2 class="text-lg font-semibold mb-4">Recent Activity</h2>
+                            <div class="overflow-x-auto max-h-96">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50 sticky top-0">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Handled By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-activity-table" class="bg-white divide-y divide-gray-200">
+                                        </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h2 class="text-lg font-semibold mb-4">Upcoming Events</h2>
+                            <div id="dashboard-events-list" class="space-y-4">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="check-in-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6 mb-6">
+                        <h2 class="text-xl font-semibold mb-4 border-b pb-3">Check-In / Check-Out</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="font-medium text-gray-700 mb-3 text-lg">Check-In a Scout</h3>
+                                <select id="checkin-child-select" class="w-full border rounded-lg px-4 py-2 mb-4 bg-gray-50"></select>
+                                <button id="checkin-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>Check In Scout
+                                </button>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-700 mb-3 text-lg">Check-Out a Scout</h3>
+                                <select id="checkout-child-select" class="w-full border rounded-lg px-4 py-2 mb-4 bg-gray-50"></select>
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="text" id="verification-code" placeholder="Enter 6-digit pickup code" class="flex-1 border rounded-lg px-4 py-2">
+                                    <button id="scan-qr-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" title="Scan QR Code">
+                                        <i class="fas fa-qrcode"></i>
+                                    </button>
+                                </div>
+                                <div id="verification-message" class="text-red-500 text-sm mb-4 h-5"></div>
+                                <button id="checkout-btn" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Check Out Scout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="members-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Troop Members</h2>
+                            <button id="add-member-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg text-sm hover:bg-blue-700">
+                                <i class="fas fa-plus mr-1"></i> Add Member
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="members-table-body" class="bg-white divide-y divide-gray-200">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="events-view" class="view-content hidden">
+                     <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold">Troop Events</h2>
+                            <button id="add-event-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg text-sm hover:bg-blue-700">
+                                <i class="fas fa-plus mr-1"></i> Add Event
+                            </button>
+                        </div>
+                        <div id="events-list" class="space-y-4">
+                            </div>
+                    </div>
+                </div>
+
+                <div id="documents-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="border-b pb-4 mb-4">
+                            <h2 class="text-lg font-semibold mb-2">Upload New Document</h2>
+                             <div class="flex flex-wrap items-center gap-2">
+                                <input type="text" id="document-name" placeholder="Document name (e.g., Permission Slip)" class="flex-grow border rounded-lg px-4 py-2 text-sm">
+                                <input type="file" id="document-upload" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                <button id="upload-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg text-sm hover:bg-blue-700">
+                                    <i class="fas fa-upload mr-1"></i> Upload
+                                </button>
+                            </div>
+                        </div>
+                        <div id="documents-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            </div>
+                    </div>
+                </div>
+
+                <div id="reports-view" class="view-content hidden">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-4">Reports</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-gray-50 border rounded-lg p-4">
+                                <h3 class="font-medium text-gray-700 mb-3"><i class="fas fa-users mr-2"></i>Member List</h3>
+                                <p class="text-sm text-gray-600 mb-4">Export a full list of all troop members and their details.</p>
+                                <button data-report="members" class="export-btn w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-download mr-2"></i>Export Member CSV
+                                </button>
+                            </div>
+                            <div class="bg-gray-50 border rounded-lg p-4">
+                                <h3 class="font-medium text-gray-700 mb-3"><i class="fas fa-history mr-2"></i>Activity Log</h3>
+                                <p class="text-sm text-gray-600 mb-4">Export a complete log of all check-in and check-out activities.</p>
+                                <button data-report="activity" class="export-btn w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-download mr-2"></i>Export Activity CSV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settings-view" class="view-content hidden">
+                    </div>
+                
+                <div id="login-view" class="view-content hidden fixed inset-0 bg-gray-200 flex items-center justify-center z-50">
+                     <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-sm">
+                        <div class="flex items-center justify-center mb-6">
+                           <i class="fas fa-scroll text-4xl mr-3 text-blue-700"></i>
+                           <h1 class="text-3xl font-bold text-gray-800">ScoutCheck</h1>
+                        </div>
+                        <p class="text-center text-gray-600 mb-6">Secure sign-in for troop leaders and parents.</p>
+                        <input type="tel" id="login-phone" placeholder="Enter your 10-digit phone number" class="w-full border rounded-lg px-4 py-2 mb-2 text-center text-lg">
+                        <div id="login-error" class="text-red-500 mb-4 h-5 text-sm text-center"></div>
+                        <button id="send-otp-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition-transform transform hover:scale-105">
+                            Send Security Code
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="otp-view" class="view-content hidden fixed inset-0 bg-gray-200 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-sm text-center">
+                        <h2 class="text-2xl font-bold mb-2 text-gray-800">Enter Security Code</h2>
+                        <p class="text-gray-600 mb-4">A 6-digit code was sent to <b id="otp-phone"></b>.</p>
+                        <input type="text" id="otp-code" placeholder="_ _ _ _ _ _" maxlength="6" class="w-full border rounded-lg px-4 py-3 mb-2 text-center text-2xl tracking-[.5em]">
+                        <div id="otp-error" class="text-red-500 mb-4 h-5 text-sm"></div>
+                        <button id="verify-otp-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition-transform transform hover:scale-105">
+                            Verify & Sign In
+                        </button>
+                         <button id="back-to-login-btn" class="mt-4 text-sm text-gray-600 hover:underline">Back to login</button>
+                    </div>
+                </div>
+
+                <div id="guardian-view" class="view-content hidden">
+                     <div id="guardian-children-list" class="space-y-4">
+                        </div>
+                </div>
+
+            </main>
+        </div>
+
+        <div id="checkin-success-modal" class="modal-overlay hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="modal-content bg-white rounded-lg p-6 max-w-sm w-full text-center transform scale-95">
+                <i class="fas fa-check-circle text-5xl text-green-500 mb-4"></i>
+                <h2 class="text-2xl font-bold mb-2">Check-In Successful!</h2>
+                <p id="checkin-success-name" class="text-lg text-gray-700 mb-4"></p>
+                <p class="text-gray-600 mb-2">This is their unique pickup code. Show this QR code or number to a troop leader for check-out.</p>
+                <div id="modal-qr-code" class="p-2 border rounded-lg inline-block my-4"></div>
+                <p id="modal-code" class="text-5xl font-bold tracking-widest bg-gray-100 text-blue-700 py-4 px-6 rounded-lg my-4 inline-block"></p>
+                <button id="close-checkin-modal-btn" class="mt-6 w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700">
+                    Got It!
+                </button>
+            </div>
+        </div>
+
+        <div id="member-modal" class="modal-overlay hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="modal-content bg-white rounded-lg p-6 max-w-lg w-full transform scale-95">
+                <h2 id="member-modal-title" class="text-xl font-bold mb-4">Add New Member</h2>
+                <form id="member-form">
+                    <input type="hidden" id="member-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="member-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" id="member-name" class="mt-1 block w-full border rounded-md shadow-sm px-3 py-2" required>
+                        </div>
+                        <div>
+                           <label for="member-program" class="block text-sm font-medium text-gray-700">Program</label>
+                           <select id="member-program" class="mt-1 block w-full border rounded-md shadow-sm px-3 py-2">
+                               <option>Trailmen</option>
+                               <option>American Heritage Girls</option>
+                           </select>
+                        </div>
+                        <div>
+                            <label for="member-level" class="block text-sm font-medium text-gray-700">Level</label>
+                            <input type="text" id="member-level" class="mt-1 block w-full border rounded-md shadow-sm px-3 py-2" required>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" id="cancel-member-modal" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">Save Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div id="event-modal" class="modal-overlay hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="modal-content bg-white rounded-lg p-6 max-w-lg w-full transform scale-95">
+                <h2 id="event-modal-title" class="text-xl font-bold mb-4">Add New Event</h2>
+                <form id="event-form">
+                    <input type="hidden" id="event-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="event-title" class="block text-sm font-medium text-gray-700">Event Title</label>
+                            <input type="text" id="event-title" class="mt-1 block w-full border rounded-md shadow-sm px-3 py-2" required>
+                        </div>
+                        <div>
+                            <label for="event-date" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="event-date" class="mt-1 block w-full border rounded-md shadow-sm px-3 py-2" required>
+                        </div>
+                        <div>
+                            <label for="event-location" class="block text-sm font-medium text-gray-700">Location</label>
+                            <input type="text" id="event-location" class="mt-1 block w-full border rounded-md shadow-sm px-3 py-2" required>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" id="cancel-event-modal" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">Save Event</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="success-toast" class="hidden fixed top-5 right-5 bg-green-500 text-white py-3 px-5 rounded-lg shadow-xl flex items-center z-[100]">
+            <i class="fas fa-check-circle w-6 h-6 mr-3"></i>
+            <span id="success-message" class="font-medium"></span>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- STATE MANAGEMENT ---
+        let state = {
+            currentUser: null,
+            members: [],
+            documents: [],
+            events: [],
+            eventLogs: [],
+            users: [
+                { id: 'u1', phone: '1112223333', childIds: ['m1', 'm2'], role: 'guardian', name: 'Mary Smith' },
+                { id: 'u2', phone: '4445556666', role: 'admin', name: 'Troop Leader' }
+            ],
+            phoneToVerify: null,
+            sidebarOpen: true
+        };
+
+        const saveState = () => {
+            localStorage.setItem('scoutCheckState', JSON.stringify(state));
+        };
+
+        const loadState = () => {
+            const savedState = localStorage.getItem('scoutCheckState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            } else {
+                // First time load with some demo data
+                state.members = [
+                    { id: 'm1', name: 'John Smith', program: 'Trailmen', level: 'Fox', status: 'out', pickupCode: null },
+                    { id: 'm2', name: 'Sarah Johnson', program: 'AHG', level: 'Pioneer', status: 'out', pickupCode: null },
+                    { id: 'm3', name: 'Michael Brown', program: 'Trailmen', level: 'Hawk', status: 'out', pickupCode: null }
+                ];
+                 state.events = [
+                    { id: 'e1', title: 'Troop Meeting', date: '2025-10-03', location: 'Community Hall' },
+                    { id: 'e2', title: 'Camping Trip', date: '2025-10-18', location: 'State Park' }
+                 ];
+                saveState();
+            }
+        };
+        
+        // --- DOM ELEMENTS ---
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+
+        const elements = {
+            app: $('#app'),
+            sidebar: $('#sidebar'),
+            mainMenuToggle: $('#main-menu-toggle'),
+            viewTitle: $('#view-title'),
+            viewContents: $$('.view-content'),
+            navButtons: $$('.nav-button'),
+            // Login/Auth
+            loginView: $('#login-view'),
+            otpView: $('#otp-view'),
+            loginPhone: $('#login-phone'),
+            loginError: $('#login-error'),
+            sendOtpBtn: $('#send-otp-btn'),
+            otpPhone: $('#otp-phone'),
+            otpCode: $('#otp-code'),
+            otpError: $('#otp-error'),
+            verifyOtpBtn: $('#verify-otp-btn'),
+            backToLoginBtn: $('#back-to-login-btn'),
+            logoutBtn: $('#logout-btn'),
+            // User Info Header
+            userName: $('#user-name'),
+            userRole: $('#user-role'),
+            userAvatar: $('#user-avatar'),
+            // Check-in/Out
+            checkinChildSelect: $('#checkin-child-select'),
+            checkoutChildSelect: $('#checkout-child-select'),
+            checkinBtn: $('#checkin-btn'),
+            checkoutBtn: $('#checkout-btn'),
+            verificationCode: $('#verification-code'),
+            verificationMessage: $('#verification-message'),
+            // Modals & Toasts
+            checkinSuccessModal: $('#checkin-success-modal'),
+            closeCheckinModalBtn: $('#close-checkin-modal-btn'),
+            modalQrCode: $('#modal-qr-code'),
+            modalCode: $('#modal-code'),
+            successToast: $('#success-toast'),
+            successMessage: $('#success-message'),
+            // Guardian View
+            guardianView: $('#guardian-view'),
+            guardianChildrenList: $('#guardian-children-list'),
+            // Members View
+            membersTableBody: $('#members-table-body'),
+            addMemberBtn: $('#add-member-btn'),
+            memberModal: $('#member-modal'),
+            memberModalTitle: $('#member-modal-title'),
+            memberForm: $('#member-form'),
+            cancelMemberModal: $('#cancel-member-modal'),
+            // Events View
+            eventsList: $('#events-list'),
+            addEventBtn: $('#add-event-btn'),
+            eventModal: $('#event-modal'),
+            eventModalTitle: $('#event-modal-title'),
+            eventForm: $('#event-form'),
+            cancelEventModal: $('#cancel-event-modal'),
+            // Documents
+            documentsList: $('#documents-list'),
+            documentUpload: $('#document-upload'),
+            documentName: $('#document-name'),
+            uploadBtn: $('#upload-btn'),
+            // Dashboard
+            totalMembersStat: $('#total-members-stat'),
+            checkedInStat: $('#checked-in-stat'),
+            upcomingEventsStat: $('#upcoming-events-stat'),
+            totalDocsStat: $('#total-docs-stat'),
+            recentActivityTable: $('#recent-activity-table'),
+            dashboardEventsList: $('#dashboard-events-list'),
+            // Reports
+            exportBtns: $$('.export-btn'),
+        };
+
+        // --- UTILITY FUNCTIONS ---
+        const showView = (viewId) => {
+            elements.viewContents.forEach(view => view.classList.add('hidden'));
+            const viewToShow = $(`#${viewId}-view`);
+            if (viewToShow) {
+                viewToShow.classList.remove('hidden');
+                if (!['login', 'otp'].includes(viewId)) {
+                    elements.viewTitle.textContent = viewId.replace(/-/g, ' ').toUpperCase();
+                    elements.navButtons.forEach(btn => {
+                        btn.classList.toggle('bg-blue-700', btn.dataset.view === viewId);
+                    });
+                }
+            }
+             // Close sidebar on mobile after navigation
+            if (window.innerWidth < 1024) {
+                 elements.sidebar.classList.add('-translate-x-full');
+            }
+        };
+
+        const displayToast = (message) => {
+            elements.successMessage.textContent = message;
+            elements.successToast.classList.remove('hidden');
+            elements.successToast.classList.add('fade-in');
+            setTimeout(() => {
+                elements.successToast.classList.add('hidden');
+                elements.successToast.classList.remove('fade-in');
+            }, 3000);
+        };
+        
+        const openModal = (modalElement) => {
+            modalElement.classList.remove('hidden');
+            setTimeout(() => {
+                modalElement.classList.remove('opacity-0');
+                modalElement.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        };
+
+        const closeModal = (modalElement) => {
+            modalElement.classList.add('opacity-0');
+            modalElement.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                modalElement.classList.add('hidden');
+            }, 300);
+        };
+
+        const generateId = (prefix) => `${prefix}${Date.now()}`;
+        
+        const generateSecure6DigitCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        const formatTime = (dateString) => new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
+        // --- RENDER FUNCTIONS ---
+        const renderAll = () => {
+            if (!state.currentUser) {
+                elements.app.classList.add('hidden');
+                showView('login');
+                return;
+            }
+            elements.app.classList.remove('hidden');
+            
+            // Update header with user info
+            elements.userName.textContent = state.currentUser.name;
+            elements.userRole.textContent = state.currentUser.role.charAt(0).toUpperCase() + state.currentUser.role.slice(1);
+            
+            if (state.currentUser.role === 'admin') {
+                renderDashboard();
+                renderMembers();
+                renderCheckInOut();
+                renderEvents();
+                renderDocuments();
+                showView('dashboard');
+            } else { // Guardian
+                renderGuardianView();
+                showView('guardian');
+            }
+        };
+
+        const renderDashboard = () => {
+            elements.totalMembersStat.textContent = state.members.length;
+            elements.checkedInStat.textContent = state.members.filter(m => m.status === 'in').length;
+            const upcomingEvents = state.events.filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0));
+            elements.upcomingEventsStat.textContent = upcomingEvents.length;
+            elements.totalDocsStat.textContent = state.documents.length;
+            
+            // Recent Activity
+            elements.recentActivityTable.innerHTML = state.eventLogs.slice(0, 10).map(log => `
+                <tr>
+                    <td class="px-4 py-2">${log.memberName}</td>
+                    <td class="px-4 py-2">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${log.type === 'check-in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${log.type.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2 text-sm text-gray-500">${formatTime(log.timestamp)}</td>
+                    <td class="px-4 py-2 text-sm text-gray-500">${log.byUserName}</td>
+                </tr>
+            `).join('');
+            
+            // Dashboard Events
+            elements.dashboardEventsList.innerHTML = upcomingEvents.slice(0, 3).map(event => `
+                <div class="border-l-4 border-blue-500 pl-4 py-1">
+                    <div class="text-sm font-medium">${event.title}</div>
+                    <div class="text-xs text-gray-500">${formatDate(event.date)} at ${event.location}</div>
+                </div>
+            `).join('') || `<p class="text-sm text-gray-500">No upcoming events.</p>`;
+        };
+
+        const renderMembers = () => {
+            elements.membersTableBody.innerHTML = state.members.map(member => `
+                <tr data-id="${member.id}">
+                    <td class="px-4 py-3 font-medium">${member.name}</td>
+                    <td class="px-4 py-3 text-sm">${member.program}</td>
+                    <td class="px-4 py-3 text-sm">${member.level}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${member.status === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${member.status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm space-x-3">
+                        <button class="edit-member-btn text-blue-600 hover:text-blue-900"><i class="fas fa-edit"></i></button>
+                        <button class="delete-member-btn text-red-600 hover:text-red-900"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+        
+        const renderEvents = () => {
+             elements.eventsList.innerHTML = state.events.sort((a,b) => new Date(a.date) - new Date(b.date)).map(event => `
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow" data-id="${event.id}">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium text-lg">${event.title}</h3>
+                            <div class="text-sm text-gray-600 mt-1"><i class="fas fa-calendar-day mr-2"></i>${formatDate(event.date)}</div>
+                            <div class="text-sm text-gray-600 mt-1"><i class="fas fa-map-marker-alt mr-2"></i>${event.location}</div>
+                        </div>
+                         <div class="flex space-x-2">
+                             <button class="edit-event-btn text-blue-600 hover:text-blue-900"><i class="fas fa-edit"></i></button>
+                             <button class="delete-event-btn text-red-600 hover:text-red-900"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('') || `<p class="text-sm text-gray-500">No events created yet.</p>`;
+        };
+
+        const renderDocuments = () => {
+            elements.documentsList.innerHTML = state.documents.map(doc => `
+                 <div class="border rounded-lg p-3 hover:shadow-md" data-id="${doc.id}">
+                    <div class="flex items-center mb-3">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-3"><i class="fas fa-file-alt"></i></div>
+                        <div class="flex-1 overflow-hidden">
+                            <p class="text-sm font-medium truncate">${doc.name}</p>
+                            <p class="text-xs text-gray-500">Uploaded: ${formatDate(doc.uploadedAt)}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <a href="${doc.url}" download="${doc.name}" class="text-blue-600 hover:text-blue-800" title="Download"><i class="fas fa-download"></i></a>
+                        <button class="delete-doc-btn text-red-600 hover:text-red-800" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            `).join('') || `<p class="text-sm text-gray-500">No documents uploaded yet.</p>`;
+        };
+
+        const renderCheckInOut = () => {
+            const checkedOutMembers = state.members.filter(m => m.status === 'out');
+            elements.checkinChildSelect.innerHTML = `<option value="">Select a scout to check in</option>` +
+                checkedOutMembers.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+            const checkedInMembers = state.members.filter(m => m.status === 'in');
+            elements.checkoutChildSelect.innerHTML = `<option value="">Select a scout to check out</option>` +
+                checkedInMembers.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        };
+        
+        const renderGuardianView = () => {
+             const userChildren = state.members.filter(child => state.currentUser.childIds.includes(child.id));
+             elements.guardianChildrenList.innerHTML = userChildren.map(child => `
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-lg">${child.name}</p>
+                             <span class="px-2 py-1 text-xs font-semibold rounded-full ${child.status === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                Status: ${child.status.toUpperCase()}
+                            </span>
+                        </div>
+                        <div class="space-x-2">
+                             ${child.status === 'out' ? `<button data-child-id="${child.id}" class="guardian-checkin-btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Check In</button>` : ''}
+                             ${child.status === 'in' ? `<button data-child-id="${child.id}" class="guardian-show-code-btn bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">Show Pickup Code</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        // --- EVENT LOGIC ---
+        const logEvent = (type, member) => {
+            const newLog = {
+                id: generateId('log'),
+                type,
+                memberId: member.id,
+                memberName: member.name,
+                byUserId: state.currentUser.id,
+                byUserName: state.currentUser.name,
+                timestamp: new Date().toISOString()
+            };
+            state.eventLogs.unshift(newLog); // Add to beginning
+            saveState();
+        };
+
+        const handleCheckIn = (memberId) => {
+            const memberToCheckIn = state.members.find(m => m.id === memberId);
+            if (!memberToCheckIn || memberToCheckIn.status === 'in') return;
+
+            const newCode = generateSecure6DigitCode();
+            memberToCheckIn.status = 'in';
+            memberToCheckIn.pickupCode = newCode;
+            logEvent('check-in', memberToCheckIn);
+            saveState();
+
+            // Show modal with code
+            $('#checkin-success-name').textContent = memberToCheckIn.name;
+            $('#modal-code').textContent = newCode;
+            const qrCanvas = document.createElement('canvas');
+            elements.modalQrCode.innerHTML = '';
+            elements.modalQrCode.appendChild(qrCanvas);
+            QRCode.toCanvas(qrCanvas, newCode, { width: 150, margin: 2 }, (error) => {
+                if (error) console.error(error);
+            });
+            openModal(elements.checkinSuccessModal);
+            
+            // Re-render relevant views
+            if(state.currentUser.role === 'admin') {
+                renderCheckInOut();
+                renderMembers();
+                renderDashboard();
+            } else {
+                renderGuardianView();
+            }
+        };
+
+        const handleCheckout = () => {
+            const memberId = elements.checkoutChildSelect.value;
+            const verificationCode = elements.verificationCode.value;
+            elements.verificationMessage.textContent = '';
+
+            if (!memberId) {
+                elements.verificationMessage.textContent = 'Please select a scout.';
+                return;
+            }
+            if (!verificationCode) {
+                elements.verificationMessage.textContent = 'Please enter a pickup code.';
+                return;
+            }
+
+            const memberToCheckout = state.members.find(c => c.id === memberId);
+            if (memberToCheckout.pickupCode !== verificationCode) {
+                elements.verificationMessage.textContent = 'Invalid verification code.';
+                return;
+            }
+
+            memberToCheckout.status = 'out';
+            memberToCheckout.pickupCode = null;
+            logEvent('check-out', memberToCheckout);
+            saveState();
+
+            displayToast(`${memberToCheckout.name} checked out successfully!`);
+            elements.verificationCode.value = '';
+            
+            renderCheckInOut();
+            renderMembers();
+            renderDashboard();
+        };
+
+        // --- AUTHENTICATION ---
+        const handleLoginRequest = () => {
+            const phone = elements.loginPhone.value.replace(/\D/g, '');
+            elements.loginError.textContent = '';
+            if (phone.length !== 10) {
+                elements.loginError.textContent = 'Please enter a valid 10-digit phone number.';
+                return;
+            }
+
+            const user = state.users.find(u => u.phone === phone);
+            if (user) {
+                state.phoneToVerify = phone;
+                saveState();
+                elements.otpPhone.textContent = phone;
+                showView('otp');
+            } else {
+                elements.loginError.textContent = 'Phone number not recognized.';
+            }
+        };
+
+        const handleVerifyOtp = () => {
+            const otp = elements.otpCode.value;
+            elements.otpError.textContent = '';
+            // For this demo, any 6-digit code is accepted. In a real app, you'd verify this.
+            if (otp.length !== 6) {
+                elements.otpError.textContent = 'Please enter the 6-digit code.';
+                return;
+            }
+
+            const user = state.users.find(u => u.phone === state.phoneToVerify);
+            state.currentUser = user;
+            state.phoneToVerify = null;
+            saveState();
+            
+            elements.loginPhone.value = '';
+            elements.otpCode.value = '';
+            
+            if (user.role === 'admin') {
+                elements.app.classList.remove('hidden');
+                elements.loginView.classList.add('hidden');
+                elements.otpView.classList.add('hidden');
+            } else {
+                elements.app.classList.remove('hidden');
+                elements.sidebar.classList.add('hidden');
+                elements.loginView.classList.add('hidden');
+                elements.otpView.classList.add('hidden');
+            }
+            renderAll();
+        };
+
+        const handleLogout = () => {
+            state.currentUser = null;
+            saveState();
+            window.location.reload(); // Easiest way to reset the app state for login
+        };
+
+        // --- EVENT LISTENERS ---
+        const setupEventListeners = () => {
+            // Navigation
+            elements.navButtons.forEach(button => {
+                button.addEventListener('click', () => showView(button.dataset.view));
+            });
+            
+            elements.mainMenuToggle.addEventListener('click', () => {
+                 elements.sidebar.classList.toggle('-translate-x-full');
+            });
+
+            // Auth
+            elements.sendOtpBtn.addEventListener('click', handleLoginRequest);
+            elements.verifyOtpBtn.addEventListener('click', handleVerifyOtp);
+            elements.backToLoginBtn.addEventListener('click', () => showView('login'));
+            elements.logoutBtn.addEventListener('click', handleLogout);
+
+            // Check-in/out
+            elements.checkinBtn.addEventListener('click', () => handleCheckIn(elements.checkinChildSelect.value));
+            elements.checkoutBtn.addEventListener('click', handleCheckout);
+            elements.closeCheckinModalBtn.addEventListener('click', () => closeModal(elements.checkinSuccessModal));
+
+            // Guardian view buttons (delegated)
+            elements.guardianChildrenList.addEventListener('click', (e) => {
+                const checkinBtn = e.target.closest('.guardian-checkin-btn');
+                const showCodeBtn = e.target.closest('.guardian-show-code-btn');
+                if (checkinBtn) {
+                    handleCheckIn(checkinBtn.dataset.childId);
+                }
+                if (showCodeBtn) {
+                    const member = state.members.find(m => m.id === showCodeBtn.dataset.childId);
+                    if (member) {
+                        handleCheckIn(member.id); // Re-checking in shows the same modal
+                    }
+                }
+            });
+
+            // Member CRUD
+            elements.addMemberBtn.addEventListener('click', () => {
+                elements.memberForm.reset();
+                $('#member-id').value = '';
+                elements.memberModalTitle.textContent = 'Add New Member';
+                openModal(elements.memberModal);
+            });
+            elements.cancelMemberModal.addEventListener('click', () => closeModal(elements.memberModal));
+            elements.memberForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = $('#member-id').value;
+                const memberData = {
+                    name: $('#member-name').value,
+                    program: $('#member-program').value,
+                    level: $('#member-level').value,
+                };
+                if (id) { // Update existing
+                    const member = state.members.find(m => m.id === id);
+                    Object.assign(member, memberData);
+                    displayToast('Member updated successfully!');
+                } else { // Create new
+                    const newMember = {
+                        ...memberData,
+                        id: generateId('m'),
+                        status: 'out',
+                        pickupCode: null
+                    };
+                    state.members.push(newMember);
+                    displayToast('Member added successfully!');
+                }
+                saveState();
+                renderMembers();
+                renderCheckInOut();
+                renderDashboard();
+                closeModal(elements.memberModal);
+            });
+
+            elements.membersTableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+                const memberId = row.dataset.id;
+                const member = state.members.find(m => m.id === memberId);
+                
+                if (e.target.closest('.edit-member-btn')) {
+                    $('#member-id').value = member.id;
+                    $('#member-name').value = member.name;
+                    $('#member-program').value = member.program;
+                    $('#member-level').value = member.level;
+                    elements.memberModalTitle.textContent = 'Edit Member';
+                    openModal(elements.memberModal);
+                }
+                if (e.target.closest('.delete-member-btn')) {
+                    if (confirm(`Are you sure you want to delete ${member.name}?`)) {
+                        state.members = state.members.filter(m => m.id !== memberId);
+                        saveState();
+                        renderMembers();
+                        renderCheckInOut();
+                        renderDashboard();
+                        displayToast('Member deleted.');
+                    }
+                }
+            });
+            
+            // Event CRUD
+            elements.addEventBtn.addEventListener('click', () => {
+                elements.eventForm.reset();
+                $('#event-id').value = '';
+                elements.eventModalTitle.textContent = 'Add New Event';
+                openModal(elements.eventModal);
+            });
+            elements.cancelEventModal.addEventListener('click', () => closeModal(elements.eventModal));
+            elements.eventForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = $('#event-id').value;
+                const eventData = {
+                    title: $('#event-title').value,
+                    date: $('#event-date').value,
+                    location: $('#event-location').value,
+                };
+                if (id) {
+                    const event = state.events.find(ev => ev.id === id);
+                    Object.assign(event, eventData);
+                    displayToast('Event updated successfully!');
+                } else {
+                    state.events.push({ ...eventData, id: generateId('e') });
+                    displayToast('Event added successfully!');
+                }
+                saveState();
+                renderEvents();
+                renderDashboard();
+                closeModal(elements.eventModal);
+            });
+
+            elements.eventsList.addEventListener('click', (e) => {
+                const card = e.target.closest('[data-id]');
+                if (!card) return;
+                const eventId = card.dataset.id;
+                const event = state.events.find(ev => ev.id === eventId);
+                
+                if (e.target.closest('.edit-event-btn')) {
+                    $('#event-id').value = event.id;
+                    $('#event-title').value = event.title;
+                    $('#event-date').value = event.date;
+                    $('#event-location').value = event.location;
+                    elements.eventModalTitle.textContent = 'Edit Event';
+                    openModal(elements.eventModal);
+                }
+                if (e.target.closest('.delete-event-btn')) {
+                    if (confirm(`Are you sure you want to delete the "${event.title}" event?`)) {
+                        state.events = state.events.filter(ev => ev.id !== eventId);
+                        saveState();
+                        renderEvents();
+                        renderDashboard();
+                        displayToast('Event deleted.');
+                    }
+                }
+            });
+            
+             // Document Management
+            elements.uploadBtn.addEventListener('click', () => {
+                const file = elements.documentUpload.files[0];
+                const name = elements.documentName.value.trim();
+
+                if (!file || !name) {
+                    alert('Please provide a document name and select a file.');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                     const newDoc = {
+                        id: generateId('d'),
+                        name: name,
+                        url: e.target.result, // Store as data URL
+                        uploadedAt: new Date().toISOString()
+                    };
+                    state.documents.push(newDoc);
+                    saveState();
+                    renderDocuments();
+                    renderDashboard();
+                    displayToast('Document uploaded successfully!');
+                    elements.documentUpload.value = '';
+                    elements.documentName.value = '';
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            elements.documentsList.addEventListener('click', e => {
+                const card = e.target.closest('[data-id]');
+                 if (e.target.closest('.delete-doc-btn')) {
+                     const docId = card.dataset.id;
+                     if(confirm('Are you sure you want to delete this document?')) {
+                         state.documents = state.documents.filter(d => d.id !== docId);
+                         saveState();
+                         renderDocuments();
+                         renderDashboard();
+                         displayToast('Document deleted.');
+                     }
+                 }
+            });
+            
+            // Reports
+            elements.exportBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const reportType = btn.dataset.report;
+                    let data, filename;
+                    if(reportType === 'members') {
+                        data = state.members;
+                        filename = 'members_export.csv';
+                    } else if (reportType === 'activity') {
+                        data = state.eventLogs;
+                        filename = 'activity_log_export.csv';
+                    }
+                    if(data && data.length > 0) {
+                        exportToCSV(data, filename);
+                    } else {
+                        alert('No data available to export.');
+                    }
+                });
+            });
+        };
+        
+        // --- DATA EXPORT ---
+        const exportToCSV = (data, filename) => {
+            const header = Object.keys(data[0]);
+            const csvRows = [header.join(',')];
+            data.forEach(row => {
+                const values = header.map(fieldName => JSON.stringify(row[fieldName] || ''));
+                csvRows.push(values.join(','));
+            });
+            
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            displayToast('Report exported successfully!');
+        }
+
+        // --- INITIALIZATION ---
+        const init = () => {
+            loadState();
+            setupEventListeners();
+            if (state.currentUser) {
+                 if (state.currentUser.role === 'guardian') {
+                    elements.sidebar.classList.add('hidden');
+                }
+                renderAll();
+            } else {
+                showView('login');
+            }
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>
